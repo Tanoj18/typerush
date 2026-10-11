@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="TypeRush is a fast, responsive, and minimalist typing speed platform featuring multi-level practice and timed competitive challenges.">
+  <title>TypeRush — Find Your Rhythm</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header / Navigation -->
+  <header class="site-header" role="banner">
+    <div class="container header-inner">
+      <a href="#home" class="logo" id="logoLink" aria-label="TypeRush Home">
+        <span class="logo-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="3" ry="3"></rect>
+            <line x1="6" y1="8" x2="6.01" y2="8"></line>
+            <line x1="10" y1="8" x2="10.01" y2="8"></line>
+            <line x1="14" y1="8" x2="14.01" y2="8"></line>
+            <line x1="18" y1="8" x2="18.01" y2="8"></line>
+            <line x1="6" y1="12" x2="6.01" y2="12"></line>
+            <line x1="10" y1="12" x2="10.01" y2="12"></line>
+            <line x1="14" y1="12" x2="14.01" y2="12"></line>
+            <line x1="18" y1="12" x2="18.01" y2="12"></line>
+            <line x1="8" y1="16" x2="16" y2="16"></line>
+          </svg>
+        </span>
+        <span class="logo-text">TypeRush</span>
+      </a>
+
+      <nav class="site-nav" role="navigation" aria-label="Main Navigation">
+        <button type="button" class="nav-link active" data-view="home" id="navHome">Home</button>
+        <button type="button" class="nav-link" data-view="practice" id="navPractice">Practice</button>
+        <button type="button" class="nav-link" data-view="competitive" id="navCompetitive">Competitive</button>
+        <button type="button" class="nav-link" data-view="stats" id="navStats">My Stats</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Views -->
+  <main id="mainContent" class="main-content">
+    
+    <!-- 1. HOME VIEW -->
+    <section id="view-home" class="view-section active" aria-labelledby="heroHeadline">
+      <div class="container hero-container">
+        <div class="hero-badge" aria-hidden="true">Minimalist &bull; Responsive &bull; Local</div>
+        <h1 id="heroHeadline" class="hero-headline">Find your rhythm.</h1>
+        <p class="hero-subtext">
+          A focused typing environment designed to help you build mechanical consistency, increase natural speed, and challenge your reflexes without unnecessary clutter.
+        </p>
+
+        <div class="hero-cta-group">
+          <button type="button" class="btn btn-primary" id="btnHeroPractice">Start Practicing</button>
+          <button type="button" class="btn btn-secondary" id="btnHeroCompetitive">Enter Competition</button>
+        </div>
+
+        <!-- Quick Summary Snapshot of Local Records -->
+        <div class="hero-stats-card" aria-label="Personal records summary">
+          <div class="hero-stat-item">
+            <span class="hero-stat-label">Personal Best</span>
+            <span class="hero-stat-value" id="homeBestWpm">0 <abbr title="Words Per Minute" class="stat-unit">WPM</abbr></span>
+          </div>
+          <div class="hero-stat-divider" aria-hidden="true"></div>
+          <div class="hero-stat-item">
+            <span class="hero-stat-label">Best Accuracy</span>
+            <span class="hero-stat-value" id="homeBestAccuracy">0%</span>
+          </div>
+          <div class="hero-stat-divider" aria-hidden="true"></div>
+          <div class="hero-stat-item">
+            <span class="hero-stat-label">Tests Completed</span>
+            <span class="hero-stat-value" id="homeTestsCompleted">0</span>
+          </div>
+        </div>
+
+        <!-- How It Works Section -->
+        <section class="how-it-works-section" aria-labelledby="howItWorksTitle">
+          <h2 id="howItWorksTitle" class="section-title">How TypeRush Works</h2>
+          <div class="how-grid">
+            <div class="how-card">
+              <span class="how-step-num">01</span>
+              <h3 class="how-card-title">Deliberate Practice</h3>
+              <p class="how-card-desc">
+                Progress through Beginner, Intermediate, and Advanced tiers. Earn unlocks by maintaining 90%+ accuracy at target speeds.
+              </p>
+            </div>
+            <div class="how-card">
+              <span class="how-step-num">02</span>
+              <h3 class="how-card-title">Live Feedback</h3>
+              <p class="how-card-desc">
+                Real-time character matching with distinct visual states. Instant calculation of true words per minute and keystroke accuracy.
+              </p>
+            </div>
+            <div class="how-card">
+              <span class="how-step-num">03</span>
+              <h3 class="how-card-title">Private &amp; Offline</h3>
+              <p class="how-card-desc">
+                Your data stays entirely in your browser's local storage. No trackers, no mandatory sign-ins, and zero lag.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- 2. PRACTICE VIEW -->
+    <section id="view-practice" class="view-section" aria-labelledby="practiceHeading" hidden>
+      <div class="container test-container">
+        
+        <!-- Practice Configuration Header -->
+        <div class="test-header">
+          <div class="test-title-wrap">
+            <h1 id="practiceHeading" class="test-title">Practice Mode</h1>
+            <p class="test-subtitle">Hone your fundamentals at your own pace without pressure.</p>
+          </div>
+
+          <!-- Difficulty Level Selector -->
+          <div class="selector-group" role="group" aria-label="Select difficulty level">
+            <span class="selector-label">Difficulty:</span>
+            <div class="pill-group">
+              <button type="button" class="pill-btn active" data-level="1" id="btnLevel1">
+                Level 1 <span class="pill-badge">15 WPM</span>
+              </button>
+              <button type="button" class="pill-btn" data-level="2" id="btnLevel2">
+                Level 2 <span class="pill-badge">30 WPM</span>
+                <span class="lock-indicator" id="lockLevel2" aria-label="Locked">&#128274;</span>
+              </button>
+              <button type="button" class="pill-btn" data-level="3" id="btnLevel3">
+                Level 3 <span class="pill-badge">45 WPM</span>
+                <span class="lock-indicator" id="lockLevel3" aria-label="Locked">&#128274;</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Practice Mode Timer Options -->
+          <div class="selector-group" role="group" aria-label="Practice duration">
+            <span class="selector-label">Format:</span>
+            <div class="pill-group">
+              <button type="button" class="pill-btn active" data-time="0" id="btnPracticeUntimed">Untimed</button>
+              <button type="button" class="pill-btn" data-time="30" id="btnPractice30">30s</button>
+              <button type="button" class="pill-btn" data-time="60" id="btnPractice60">60s</button>
+              <button type="button" class="pill-btn" data-time="120" id="btnPractice120">120s</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Level Goal Banner -->
+        <div class="goal-banner" id="practiceGoalBanner">
+          <span class="goal-label">Current Target:</span>
+          <span class="goal-target" id="practiceGoalTarget">15 WPM with 90%+ accuracy to unlock Level 2</span>
+        </div>
+
+        <!-- Live Metrics Bar -->
+        <div class="metrics-bar" aria-label="Current typing metrics" aria-live="polite">
+          <div class="metric-item">
+            <span class="metric-label" id="practiceTimerLabel">Time</span>
+            <span class="metric-value" id="practiceTimerDisplay">0:00</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">WPM</span>
+            <span class="metric-value" id="practiceWpmDisplay">0</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Accuracy</span>
+            <span class="metric-value" id="practiceAccuracyDisplay">100%</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Progress</span>
+            <span class="metric-value" id="practiceProgressDisplay">0%</span>
+          </div>
+        </div>
+
+        <!-- Interactive Typing Box -->
+        <div class="typing-card" id="practiceTypingCard" tabindex="0" role="region" aria-label="Typing test area">
+          <div class="typing-status-hint" id="practiceStatusHint">Click here or start typing to begin</div>
+          <div class="text-display mono-font" id="practiceTextDisplay" aria-hidden="true"></div>
+          
+          <!-- Hidden accessible input to capture user keystrokes -->
+          <input 
+            type="text" 
+            id="practiceInput" 
+            class="visually-hidden-input" 
+            autocomplete="off" 
+            autocorrect="off" 
+            autocapitalize="off" 
+            spellcheck="false" 
+            aria-label="Typing test input field"
+          />
+        </div>
+
+        <!-- Test Controls -->
+        <div class="test-controls">
+          <button type="button" class="btn btn-secondary btn-icon" id="btnPracticeRestart" title="Restart passage">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Restart
+          </button>
+          <button type="button" class="btn btn-secondary btn-icon" id="btnPracticeNewPassage" title="New random passage">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            New Passage
+          </button>
+        </div>
+
+        <!-- Practice Results Modal / Card -->
+        <div class="results-modal" id="practiceResultsModal" role="dialog" aria-modal="true" aria-labelledby="practiceResultHeading" hidden>
+          <div class="results-dialog">
+            <div class="results-header">
+              <span class="results-badge" id="practiceResultBadge">Practice Complete</span>
+              <h2 id="practiceResultHeading" class="results-title">Great session!</h2>
+              <p class="results-summary" id="practiceResultSummary">Here is how you performed against your target goal.</p>
+            </div>
+
+            <!-- Unlock announcement banner -->
+            <div class="unlock-banner" id="practiceUnlockBanner" hidden>
+              <div class="unlock-icon" aria-hidden="true">&#127881;</div>
+              <div class="unlock-content">
+                <strong id="practiceUnlockTitle">New Level Unlocked!</strong>
+                <span id="practiceUnlockDesc">You met the goal requirements and unlocked the next difficulty tier.</span>
+              </div>
+            </div>
+
+            <div class="results-metrics-grid">
+              <div class="result-metric-card primary">
+                <span class="rm-label">Speed</span>
+                <span class="rm-value" id="resPracticeWpm">0</span>
+                <span class="rm-sub">Words Per Minute</span>
+              </div>
+              <div class="result-metric-card">
+                <span class="rm-label">Accuracy</span>
+                <span class="rm-value" id="resPracticeAccuracy">0%</span>
+                <span class="rm-sub">Precision score</span>
+              </div>
+              <div class="result-metric-card">
+                <span class="rm-label">Time Elapsed</span>
+                <span class="rm-value" id="resPracticeTime">0s</span>
+                <span class="rm-sub">Total duration</span>
+              </div>
+              <div class="result-metric-card">
+                <span class="rm-label">Characters</span>
+                <span class="rm-value">
+                  <span class="color-success" id="resPracticeCorrect">0</span> / 
+                  <span class="color-error" id="resPracticeIncorrect">0</span>
+                </span>
+                <span class="rm-sub">Correct / Incorrect</span>
+              </div>
+            </div>
+
+            <div class="result-target-status" id="practiceTargetStatus">
+              <!-- Dynamically populated goal outcome -->
+            </div>
+
+            <div class="results-actions">
+              <button type="button" class="btn btn-primary" id="btnPracticeModalRetry">Try Again</button>
+              <button type="button" class="btn btn-secondary" id="btnPracticeModalNext">Next Passage</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 3. COMPETITIVE VIEW -->
+    <section id="view-competitive" class="view-section" aria-labelledby="competitiveHeading" hidden>
+      <div class="container test-container">
+        
+        <div class="test-header">
+          <div class="test-title-wrap">
+            <div class="comp-live-tag">
+              <span class="comp-live-dot" aria-hidden="true"></span>
+              <span>Challenge Mode</span>
+            </div>
+            <h1 id="competitiveHeading" class="test-title">Timed Challenge</h1>
+            <p class="test-subtitle">Push your limits with official timed intervals. Pasting is strictly disabled.</p>
+          </div>
+
+          <!-- Time Challenge Selector -->
+          <div class="selector-group" role="group" aria-label="Select challenge duration">
+            <span class="selector-label">Duration:</span>
+            <div class="pill-group">
+              <button type="button" class="pill-btn active" data-comp-time="30" id="btnComp30">30 Seconds</button>
+              <button type="button" class="pill-btn" data-comp-time="60" id="btnComp60">60 Seconds</button>
+              <button type="button" class="pill-btn" data-comp-time="120" id="btnComp120">120 Seconds</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Competition Live Indicator -->
+        <div class="comp-status-bar" id="compStatusBar">
+          <span class="comp-status-text" id="compStatusText">Timer begins automatically when you type your first character.</span>
+        </div>
+
+        <!-- Live Metrics Bar -->
+        <div class="metrics-bar competitive-bar" aria-label="Competitive metrics" aria-live="polite">
+          <div class="metric-item highlight-timer">
+            <span class="metric-label">Time Remaining</span>
+            <span class="metric-value font-numeric" id="compTimerDisplay">30s</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Current WPM</span>
+            <span class="metric-value" id="compWpmDisplay">0</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Accuracy</span>
+            <span class="metric-value" id="compAccuracyDisplay">100%</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Chars Typed</span>
+            <span class="metric-value" id="compCharsDisplay">0</span>
+          </div>
+        </div>
+
+        <!-- Interactive Typing Box -->
+        <div class="typing-card" id="compTypingCard" tabindex="0" role="region" aria-label="Competitive typing test area">
+          <div class="typing-status-hint" id="compStatusHint">Click here or start typing to begin the challenge</div>
+          <div class="text-display mono-font" id="compTextDisplay" aria-hidden="true"></div>
+          
+          <input 
+            type="text" 
+            id="compInput" 
+            class="visually-hidden-input" 
+            autocomplete="off" 
+            autocorrect="off" 
+            autocapitalize="off" 
+            spellcheck="false" 
+            aria-label="Competitive test input field"
+          />
+        </div>
+
+        <!-- Test Controls -->
+        <div class="test-controls">
+          <button type="button" class="btn btn-secondary btn-icon" id="btnCompRestart" title="Restart test">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Restart Challenge
+          </button>
+        </div>
+
+        <!-- Competitive Results Modal -->
+        <div class="results-modal" id="compResultsModal" role="dialog" aria-modal="true" aria-labelledby="compResultHeading" hidden>
+          <div class="results-dialog">
+            <div class="results-header">
+              <span class="results-badge" id="compResultBadge">Challenge Concluded</span>
+              <h2 id="compResultHeading" class="results-title">Challenge Summary</h2>
+              <p class="results-summary" id="compResultSummary">Official personal result recorded on this device.</p>
+            </div>
+
+            <!-- Personal Best Comparison Pill -->
+            <div class="pb-banner" id="compPbBanner">
+              <span class="pb-tag" id="compPbTag">Personal Record</span>
+              <span class="pb-text" id="compPbText">Calculating personal best comparison...</span>
+            </div>
+
+            <div class="results-metrics-grid">
+              <div class="result-metric-card primary">
+                <span class="rm-label">Final Speed</span>
+                <span class="rm-value" id="resCompWpm">0</span>
+                <span class="rm-sub">Net WPM</span>
+              </div>
+              <div class="result-metric-card">
+                <span class="rm-label">Accuracy</span>
+                <span class="rm-value" id="resCompAccuracy">0%</span>
+                <span class="rm-sub">Precision score</span>
+              </div>
+              <div class="result-metric-card">
+                <span class="rm-label">Duration</span>
+                <span class="rm-value" id="resCompDuration">0s</span>
+                <span class="rm-sub">Timed limit</span>
+              </div>
+              <div class="result-metric-card">
+                <span class="rm-label">Keystrokes</span>
+                <span class="rm-value">
+                  <span class="color-success" id="resCompCorrect">0</span> / 
+                  <span class="color-error" id="resCompIncorrect">0</span>
+                </span>
+                <span class="rm-sub">Correct / Incorrect</span>
+              </div>
+            </div>
+
+            <div class="results-actions comp-actions">
+              <button type="button" class="btn btn-primary" id="btnCompModalRetry">Try Again</button>
+              <button type="button" class="btn btn-secondary" id="btnCompModalPractice">Practice More</button>
+              <button type="button" class="btn btn-outline" id="btnCompModalShare">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                Share Result
+              </button>
+            </div>
+            
+            <div class="share-toast" id="compShareToast" role="status" aria-live="polite" hidden>
+              Result copied to clipboard!
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 4. MY STATS VIEW -->
+    <section id="view-stats" class="view-section" aria-labelledby="statsHeading" hidden>
+      <div class="container stats-container">
+        
+        <div class="stats-header-wrap">
+          <div>
+            <h1 id="statsHeading" class="section-title">My Stats &amp; Records</h1>
+            <p class="section-desc">
+              Your overall typing performance history, unlocked practice levels, and records saved in your browser.
+            </p>
+          </div>
+          <button type="button" class="btn btn-outline btn-danger-tone" id="btnResetStats">
+            Reset Statistics
+          </button>
+        </div>
+
+        <div class="local-storage-notice" role="note">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>All statistics are stored locally on this device and browser. They are private and never uploaded to any remote server.</span>
+        </div>
+
+        <!-- Lifetime KPI Cards -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <span class="kpi-label">Tests Completed</span>
+            <span class="kpi-value" id="statsTotalTests">0</span>
+            <span class="kpi-sub">Across all modes</span>
+          </div>
+          <div class="kpi-card highlight">
+            <span class="kpi-label">Personal Best WPM</span>
+            <span class="kpi-value" id="statsPbWpm">0</span>
+            <span class="kpi-sub">All-time peak speed</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Best Accuracy</span>
+            <span class="kpi-value" id="statsPbAccuracy">0%</span>
+            <span class="kpi-sub">Peak typing precision</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Levels Unlocked</span>
+            <span class="kpi-value" id="statsUnlockedLevels">1 / 3</span>
+            <span class="kpi-sub">Practice progression</span>
+          </div>
+        </div>
+
+        <!-- Mode Specific Records Grid -->
+        <h2 class="sub-heading">Best Results by Mode</h2>
+        <div class="mode-records-grid">
+          <div class="mode-record-card">
+            <h3 class="mr-title">Practice Mode</h3>
+            <div class="mr-stat">
+              <span class="mr-label">Best Speed</span>
+              <span class="mr-val" id="statsPracticeBestWpm">0 WPM</span>
+            </div>
+            <div class="mr-stat">
+              <span class="mr-label">Best Accuracy</span>
+              <span class="mr-val" id="statsPracticeBestAcc">0%</span>
+            </div>
+          </div>
+
+          <div class="mode-record-card">
+            <h3 class="mr-title">30s Challenge</h3>
+            <div class="mr-stat">
+              <span class="mr-label">Best Speed</span>
+              <span class="mr-val" id="statsComp30BestWpm">0 WPM</span>
+            </div>
+            <div class="mr-stat">
+              <span class="mr-label">Best Accuracy</span>
+              <span class="mr-val" id="statsComp30BestAcc">0%</span>
+            </div>
+          </div>
+
+          <div class="mode-record-card">
+            <h3 class="mr-title">60s Challenge</h3>
+            <div class="mr-stat">
+              <span class="mr-label">Best Speed</span>
+              <span class="mr-val" id="statsComp60BestWpm">0 WPM</span>
+            </div>
+            <div class="mr-stat">
+              <span class="mr-label">Best Accuracy</span>
+              <span class="mr-val" id="statsComp60BestAcc">0%</span>
+            </div>
+          </div>
+
+          <div class="mode-record-card">
+            <h3 class="mr-title">120s Challenge</h3>
+            <div class="mr-stat">
+              <span class="mr-label">Best Speed</span>
+              <span class="mr-val" id="statsComp120BestWpm">0 WPM</span>
+            </div>
+            <div class="mr-stat">
+              <span class="mr-label">Best Accuracy</span>
+              <span class="mr-val" id="statsComp120BestAcc">0%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity Table -->
+        <h2 class="sub-heading">Recent Tests</h2>
+        <div class="history-table-wrap">
+          <table class="history-table" aria-label="Recent typing tests history">
+            <thead>
+              <tr>
+                <th scope="col">Date &amp; Time</th>
+                <th scope="col">Mode</th>
+                <th scope="col">Config</th>
+                <th scope="col">Speed</th>
+                <th scope="col">Accuracy</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <!-- Dynamically rendered or empty state -->
+            </tbody>
+          </table>
+          <div class="history-empty" id="historyEmptyState" hidden>
+            No tests completed yet. Start a practice session or take a timed challenge to record your initial stats!
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Confirmation Modal for Reset -->
+      <div class="results-modal" id="resetConfirmModal" role="dialog" aria-modal="true" aria-labelledby="resetModalTitle" hidden>
+        <div class="results-dialog reset-dialog">
+          <h2 id="resetModalTitle" class="results-title">Reset All Statistics?</h2>
+          <p class="results-summary">
+            This will permanently delete all your local test history, personal records, and unlocked levels. This action cannot be undone.
+          </p>
+          <div class="results-actions">
+            <button type="button" class="btn btn-danger" id="btnConfirmReset">Yes, Reset Everything</button>
+            <button type="button" class="btn btn-secondary" id="btnCancelReset">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Minimal Footer -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="container footer-inner">
+      <div class="footer-left">
+        <span class="footer-brand">TypeRush</span> &mdash; A focused typing platform.
+      </div>
+      <div class="footer-right">
+        <span>Runs locally in browser &bull; Zero backend dependencies</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
