@@ -1,6 +1,6 @@
 /**
  * TypeRush — Responsive Typing Speed Platform
- * Core Engine & State Management
+ * Core Engine, State Management, and Shuffled Passage Queues
  * 
  * Formulas:
  * - Net WPM = Math.max(0, Math.round((correctCharacters / 5) / (elapsedSeconds / 60)))
@@ -10,44 +10,177 @@
 (function () {
   'use strict';
 
-  // --- PASSAGE POOLS ---
-  const PASSAGES = {
-    level1: [
-      "The sun rises early in the morning and warms the cold ground.",
-      "Clear rivers flow past green hills and tall quiet trees.",
-      "A quick walk after lunch helps clear your mind for the day.",
-      "Simple habits done every day lead to great steady growth.",
-      "Birds sing outside the open window while rain falls softly."
-    ],
-    level2: [
-      "Consistency is the quiet engine of mastery; small deliberate efforts compound over time into remarkable skill.",
-      "Writing clean code requires patience, empathy for future readers, and a sharp eye for unnecessary complexity.",
-      "The library was silent, save for the rhythmic turning of yellowed pages and the gentle hum of an old desk lamp.",
-      "Modern keyboards are designed for tactile satisfaction, allowing skilled fingers to glide with effortless speed.",
-      "Deep focus is a rare currency today; those who can protect their attention achieve an undeniable advantage."
-    ],
-    level3: [
-      "In 1984, computer scientists observed that typing at 60+ WPM required muscle memory rather than conscious thought.",
-      "Quantum computing utilizes qubits—existing simultaneously in superposition (0 and 1)—to solve ultra-complex problems.",
-      "The expedition departed at 05:30 sharp, equipped with 24-day rations, encrypted radios, and high-altitude GPS sensors.",
-      "Architectural elegance in software design balances flexibility against overhead, reducing bug counts by over 45%.",
-      "Between 1969 and 1972, twelve astronauts walked upon lunar soil, traveling across 384,400 kilometers of deep space."
-    ],
-    competitive: [
-      "Speed is nothing without control. The true mark of a master typist is effortless rhythm, where fingers move ahead of words and punctuation flows as naturally as speech. Breathe steadily, maintain your cadence, and let the keys follow your thoughts.",
-      "Every technological revolution began with a simple tool refined through dedication. From early printing presses to mechanical keyboards, humans have sought faster and more expressive mediums to convey ideas across time and distance.",
-      "To type quickly is to bridge the gap between imagination and digital reality. When your mechanical velocity matches your train of thought, resistance disappears, and creative expression becomes an uninterrupted stream of pure momentum.",
-      "Precision under pressure requires calm composure. When the countdown begins, do not rush ahead of your accuracy. Smooth keystrokes create natural speed, while rushed mistakes compound into wasted seconds."
-    ]
-  };
+  // --- PASSAGE LIBRARY INITIALIZATION ---
+  const LIBRARY = (typeof window !== 'undefined' && window.PASSAGE_LIBRARY)
+    ? window.PASSAGE_LIBRARY
+    : (typeof PASSAGE_LIBRARY !== 'undefined' ? PASSAGE_LIBRARY : {
+        beginner: [],
+        intermediate: [],
+        advanced: []
+      });
+
+  const PASSAGE_MAP = new Map();
+  ['beginner', 'intermediate', 'advanced'].forEach(lvl => {
+    (LIBRARY[lvl] || []).forEach(item => {
+      PASSAGE_MAP.set(item.id, item);
+    });
+  });
 
   const LEVEL_CONFIG = {
-    1: { goalWpm: 15, minAcc: 90, nextLevel: 2, label: "Level 1" },
-    2: { goalWpm: 30, minAcc: 90, nextLevel: 3, label: "Level 2" },
-    3: { goalWpm: 45, minAcc: 90, nextLevel: null, label: "Level 3" }
+    1: { goalWpm: 15, minAcc: 90, nextLevel: 2, label: "Level 1 (Beginner)", key: "beginner" },
+    2: { goalWpm: 30, minAcc: 90, nextLevel: 3, label: "Level 2 (Intermediate)", key: "intermediate" },
+    3: { goalWpm: 45, minAcc: 90, nextLevel: null, label: "Level 3 (Advanced)", key: "advanced" }
   };
 
   const STORAGE_KEY = 'typerush_user_stats';
+  const QUEUES_STORAGE_KEY = 'typerush_passage_queues';
+
+  // --- FISHER-YATES SHUFFLE ALGORITHM ---
+  function fisherYatesShuffle(array) {
+    const arr = array.slice();
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = temp;
+    }
+    return arr;
+  }
+
+  function normalizeLevel(level) {
+    if (level === 1 || level === '1' || level === 'beginner') return 'beginner';
+    if (level === 2 || level === '2' || level === 'intermediate') return 'intermediate';
+    if (level === 3 || level === '3' || level === 'advanced') return 'advanced';
+    return 'beginner';
+  }
+
+  // --- PASSAGE QUEUE MANAGER ---
+  class PassageQueueManager {
+    constructor() {
+      this.queues = {
+        practice_beginner: { queue: [], currentIndex: 0, lastId: null },
+        practice_intermediate: { queue: [], currentIndex: 0, lastId: null },
+        practice_advanced: { queue: [], currentIndex: 0, lastId: null },
+        competitive_beginner: { queue: [], currentIndex: 0, lastId: null },
+        competitive_intermediate: { queue: [], currentIndex: 0, lastId: null },
+        competitive_advanced: { queue: [], currentIndex: 0, lastId: null }
+      };
+      this.loadFromStorage();
+    }
+
+    loadFromStorage() {
+      try {
+        const raw = localStorage.getItem(QUEUES_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            Object.keys(this.queues).forEach(key => {
+              if (parsed[key] && Array.isArray(parsed[key].queue)) {
+                const parts = key.split('_');
+                const level = parts[1];
+                const pool = LIBRARY[level] || [];
+                const validIds = new Set(pool.map(p => p.id));
+                const savedQueue = parsed[key].queue;
+
+                // Validate that all IDs exist in current library
+                if (savedQueue.length > 0 && savedQueue.every(id => validIds.has(id))) {
+                  const idx = Number(parsed[key].currentIndex) || 0;
+                  this.queues[key] = {
+                    queue: savedQueue,
+                    currentIndex: Math.max(0, Math.min(idx, savedQueue.length)),
+                    lastId: parsed[key].lastId || null
+                  };
+                }
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("TypeRush: Unable to load stored passage queues. Resetting fresh.", e);
+      }
+
+      // Initialize any empty queue
+      Object.keys(this.queues).forEach(key => {
+        if (!this.queues[key].queue || this.queues[key].queue.length === 0) {
+          this.refillQueue(key);
+        }
+      });
+    }
+
+    saveToStorage() {
+      try {
+        localStorage.setItem(QUEUES_STORAGE_KEY, JSON.stringify(this.queues));
+      } catch (e) {
+        console.warn("TypeRush: Failed saving passage queues to localStorage.", e);
+      }
+    }
+
+    refillQueue(key) {
+      const parts = key.split('_');
+      const level = parts[1];
+      const pool = LIBRARY[level] || [];
+      const allIds = pool.map(p => p.id);
+
+      if (allIds.length === 0) {
+        this.queues[key] = { queue: [], currentIndex: 0, lastId: null };
+        return;
+      }
+
+      let shuffled = fisherYatesShuffle(allIds);
+
+      // Prevent boundary repeats across cycle boundaries
+      const previousLastId = this.queues[key]?.lastId;
+      if (previousLastId && shuffled.length > 1 && shuffled[0] === previousLastId) {
+        const swapIdx = 1 + Math.floor(Math.random() * (shuffled.length - 1));
+        const temp = shuffled[0];
+        shuffled[0] = shuffled[swapIdx];
+        shuffled[swapIdx] = temp;
+      }
+
+      this.queues[key] = {
+        queue: shuffled,
+        currentIndex: 0,
+        lastId: previousLastId || null
+      };
+    }
+
+    getNextPassage(mode, level) {
+      const normLevel = normalizeLevel(level);
+      const key = `${mode}_${normLevel}`;
+
+      let qState = this.queues[key];
+      if (!qState || !qState.queue || qState.currentIndex >= qState.queue.length) {
+        this.refillQueue(key);
+        qState = this.queues[key];
+      }
+
+      const nextId = qState.queue[qState.currentIndex];
+      qState.currentIndex += 1;
+      qState.lastId = nextId;
+
+      this.saveToStorage();
+
+      const passageObj = PASSAGE_MAP.get(nextId);
+      if (passageObj) {
+        return passageObj;
+      }
+
+      // Fallback safeguard
+      const fallbackPool = LIBRARY[normLevel] || LIBRARY.beginner;
+      return fallbackPool[0] || { id: "fallback", text: "Practice typing with steady rhythm and focus." };
+    }
+
+    resetAll() {
+      Object.keys(this.queues).forEach(key => {
+        this.refillQueue(key);
+      });
+      try {
+        localStorage.removeItem(QUEUES_STORAGE_KEY);
+      } catch (e) {}
+    }
+  }
+
+  const passageManager = new PassageQueueManager();
 
   // --- APPLICATION STATE ---
   const state = {
@@ -58,7 +191,7 @@
       level: 1,
       targetTimeSeconds: 0, // 0 = untimed
       passage: '',
-      lastPassageIndex: -1,
+      passageId: null,
       startTime: null,
       timerInterval: null,
       isActive: false,
@@ -71,9 +204,10 @@
 
     // Competitive state
     comp: {
+      difficulty: 'beginner', // 'beginner' | 'intermediate' | 'advanced'
       durationSeconds: 30,
       passage: '',
-      lastPassageIndex: -1,
+      passageId: null,
       startTime: null,
       timerInterval: null,
       isActive: false,
@@ -160,6 +294,9 @@
     btnPracticeModalNext: document.getElementById('btnPracticeModalNext'),
 
     // Competitive Mode elements
+    btnCompLevelBeginner: document.getElementById('btnCompLevelBeginner'),
+    btnCompLevelIntermediate: document.getElementById('btnCompLevelIntermediate'),
+    btnCompLevelAdvanced: document.getElementById('btnCompLevelAdvanced'),
     compTimeBtns: [
       document.getElementById('btnComp30'),
       document.getElementById('btnComp60'),
@@ -175,6 +312,7 @@
     compTextDisplay: document.getElementById('compTextDisplay'),
     compInput: document.getElementById('compInput'),
     btnCompRestart: document.getElementById('btnCompRestart'),
+    btnCompNewPassage: document.getElementById('btnCompNewPassage'),
 
     // Competitive Results Modal
     compResultsModal: document.getElementById('compResultsModal'),
@@ -279,16 +417,13 @@
       localStorage.removeItem(STORAGE_KEY);
     } catch (e) {}
 
+    passageManager.resetAll();
     updateLevelLocksUI();
     renderStatsView();
     renderHomeStats();
   }
 
   // --- CALCULATION HELPERS ---
-  /**
-   * Calculates net Words Per Minute based on standard 5 chars/word convention.
-   * Net WPM = (correctChars / 5) / (elapsedMinutes)
-   */
   function calculateWpm(correctChars, elapsedSeconds) {
     if (elapsedSeconds <= 0.5 || correctChars <= 0) return 0;
     const minutes = elapsedSeconds / 60;
@@ -296,9 +431,6 @@
     return isFinite(wpm) ? Math.max(0, wpm) : 0;
   }
 
-  /**
-   * Calculates typing accuracy percentage.
-   */
   function calculateAccuracy(correctChars, totalTyped) {
     if (totalTyped <= 0) return 100;
     const acc = Math.round((correctChars / totalTyped) * 100);
@@ -316,7 +448,6 @@
   function switchView(targetView) {
     state.currentView = targetView;
 
-    // Update nav tabs
     dom.navLinks.forEach(link => {
       const view = link.getAttribute('data-view');
       if (view === targetView) {
@@ -328,7 +459,6 @@
       }
     });
 
-    // Toggle view containers
     Object.keys(dom.views).forEach(key => {
       if (key === targetView) {
         dom.views[key].removeAttribute('hidden');
@@ -339,11 +469,9 @@
       }
     });
 
-    // Cleanup active tests if leaving their screens
     if (targetView !== 'practice') resetPracticeTest(false);
     if (targetView !== 'competitive') resetCompTest(false);
 
-    // View specific activations
     if (targetView === 'home') {
       renderHomeStats();
     } else if (targetView === 'practice') {
@@ -365,28 +493,16 @@
   }
 
   // --- PRACTICE MODE ENGINE ---
-  function getRandomPassage(pool, lastIndex) {
-    if (pool.length === 1) return { passage: pool[0], index: 0 };
-    let newIndex = Math.floor(Math.random() * pool.length);
-    while (newIndex === lastIndex) {
-      newIndex = Math.floor(Math.random() * pool.length);
-    }
-    return { passage: pool[newIndex], index: newIndex };
-  }
-
   function updateLevelLocksUI() {
     const isL2Unlocked = state.stats.unlockedLevels.includes(2);
     const isL3Unlocked = state.stats.unlockedLevels.includes(3);
 
-    // Level 2 button
     dom.btnLevel2.disabled = !isL2Unlocked;
     if (dom.lockLevel2) dom.lockLevel2.style.display = isL2Unlocked ? 'none' : 'inline';
 
-    // Level 3 button
     dom.btnLevel3.disabled = !isL3Unlocked;
     if (dom.lockLevel3) dom.lockLevel3.style.display = isL3Unlocked ? 'none' : 'inline';
 
-    // Update active level indicator
     [dom.btnLevel1, dom.btnLevel2, dom.btnLevel3].forEach((btn, idx) => {
       const lvl = idx + 1;
       if (lvl === state.practice.level) {
@@ -396,7 +512,6 @@
       }
     });
 
-    // Update goal banner
     const cfg = LEVEL_CONFIG[state.practice.level];
     if (cfg.nextLevel) {
       const nextUnlocked = state.stats.unlockedLevels.includes(cfg.nextLevel);
@@ -463,15 +578,13 @@
     dom.practiceResultsModal.setAttribute('hidden', '');
 
     if (getNewPassage || !state.practice.passage) {
-      const pool = PASSAGES[`level${state.practice.level}`];
-      const res = getRandomPassage(pool, state.practice.lastPassageIndex);
-      state.practice.passage = res.passage;
-      state.practice.lastPassageIndex = res.index;
+      const nextPassageObj = passageManager.getNextPassage('practice', state.practice.level);
+      state.practice.passage = nextPassageObj.text;
+      state.practice.passageId = nextPassageObj.id;
     }
 
     renderPassageText(dom.practiceTextDisplay, state.practice.passage, '');
 
-    // Reset metric indicators
     dom.practiceWpmDisplay.textContent = '0';
     dom.practiceAccuracyDisplay.textContent = '100%';
     dom.practiceProgressDisplay.textContent = '0%';
@@ -486,7 +599,6 @@
       dom.practiceStatusHint.textContent = 'Untimed: Click here or start typing to begin';
     }
 
-    // Auto focus typing input
     setTimeout(() => {
       dom.practiceInput.focus();
     }, 50);
@@ -515,7 +627,6 @@
         dom.practiceTimerDisplay.textContent = formatTime(elapsedSec);
       }
 
-      // Live metrics
       const wpm = calculateWpm(state.practice.correctChars, elapsedSec);
       const acc = calculateAccuracy(state.practice.correctChars, state.practice.totalTyped);
       dom.practiceWpmDisplay.textContent = wpm;
@@ -529,12 +640,10 @@
     const val = dom.practiceInput.value;
     const passage = state.practice.passage;
 
-    // Start timer on first keystroke
     if (!state.practice.isActive && val.length > 0) {
       startPracticeTimer();
     }
 
-    // Count correct / incorrect
     let correct = 0;
     let incorrect = 0;
     for (let i = 0; i < val.length; i++) {
@@ -550,11 +659,9 @@
     state.practice.incorrectChars = incorrect;
     state.practice.totalTyped = val.length;
 
-    // Progress percentage
     const progress = Math.min(100, Math.round((val.length / passage.length) * 100));
     dom.practiceProgressDisplay.textContent = `${progress}%`;
 
-    // Real-time WPM & Acc
     if (state.practice.isActive) {
       const elapsed = Math.max(0.5, (performance.now() - state.practice.startTime) / 1000);
       const wpm = calculateWpm(correct, elapsed);
@@ -563,10 +670,8 @@
       dom.practiceAccuracyDisplay.textContent = `${acc}%`;
     }
 
-    // Update characters highlighting
     renderPassageText(dom.practiceTextDisplay, passage, val);
 
-    // Check completion condition
     if (val.length >= passage.length) {
       finishPracticeTest();
     }
@@ -585,7 +690,6 @@
     dom.practiceInput.disabled = true;
     dom.practiceTypingCard.classList.remove('in-progress');
 
-    // Final elapsed calculation
     const totalElapsedSec = state.practice.startTime
       ? Math.max(1, (performance.now() - state.practice.startTime) / 1000)
       : Math.max(1, state.practice.elapsedSeconds);
@@ -593,7 +697,6 @@
     const finalWpm = calculateWpm(state.practice.correctChars, totalElapsedSec);
     const finalAcc = calculateAccuracy(state.practice.correctChars, state.practice.totalTyped);
 
-    // Save records & evaluate level unlock
     const currentLvlCfg = LEVEL_CONFIG[state.practice.level];
     const isGoalAchieved = finalWpm >= currentLvlCfg.goalWpm && finalAcc >= currentLvlCfg.minAcc;
 
@@ -609,7 +712,6 @@
       }
     }
 
-    // Update lifetime stats
     state.stats.totalTests += 1;
     if (finalWpm > state.stats.personalBestWpm) state.stats.personalBestWpm = finalWpm;
     if (finalAcc > state.stats.bestAccuracy) state.stats.bestAccuracy = finalAcc;
@@ -621,7 +723,6 @@
       state.stats.bestByMode.practice.acc = finalAcc;
     }
 
-    // Append history
     state.stats.history.unshift({
       date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
       mode: 'Practice',
@@ -634,7 +735,6 @@
     saveStats();
     updateLevelLocksUI();
 
-    // Populate Practice Results Modal
     dom.resPracticeWpm.textContent = finalWpm;
     dom.resPracticeAccuracy.textContent = `${finalAcc}%`;
     dom.resPracticeTime.textContent = `${Math.round(totalElapsedSec)}s`;
@@ -663,7 +763,25 @@
 
   // --- COMPETITIVE MODE ENGINE ---
   function initCompMode() {
+    updateCompDifficultyUI();
     resetCompTest(true);
+  }
+
+  function updateCompDifficultyUI() {
+    const diff = state.comp.difficulty;
+    [
+      { btn: dom.btnCompLevelBeginner, key: 'beginner' },
+      { btn: dom.btnCompLevelIntermediate, key: 'intermediate' },
+      { btn: dom.btnCompLevelAdvanced, key: 'advanced' }
+    ].forEach(item => {
+      if (item.btn) {
+        if (item.key === diff) {
+          item.btn.classList.add('active');
+        } else {
+          item.btn.classList.remove('active');
+        }
+      }
+    });
   }
 
   function resetCompTest(getNewPassage = false) {
@@ -688,9 +806,9 @@
     dom.compShareToast.setAttribute('hidden', '');
 
     if (getNewPassage || !state.comp.passage) {
-      const res = getRandomPassage(PASSAGES.competitive, state.comp.lastPassageIndex);
-      state.comp.passage = res.passage;
-      state.comp.lastPassageIndex = res.index;
+      const nextPassageObj = passageManager.getNextPassage('competitive', state.comp.difficulty);
+      state.comp.passage = nextPassageObj.text;
+      state.comp.passageId = nextPassageObj.id;
     }
 
     renderPassageText(dom.compTextDisplay, state.comp.passage, '');
@@ -700,7 +818,8 @@
     dom.compAccuracyDisplay.textContent = '100%';
     dom.compCharsDisplay.textContent = '0';
 
-    dom.compStatusText.textContent = `Timer begins automatically when you type your first character. (${state.comp.durationSeconds}s limit)`;
+    const diffName = state.comp.difficulty.charAt(0).toUpperCase() + state.comp.difficulty.slice(1);
+    dom.compStatusText.textContent = `${diffName} Challenge (${state.comp.durationSeconds}s limit): Timer begins on the first keystroke.`;
     dom.compStatusHint.textContent = 'Click here or start typing to begin the challenge';
 
     setTimeout(() => {
@@ -724,7 +843,6 @@
       state.comp.remainingSeconds = remaining;
       dom.compTimerDisplay.textContent = `${remaining}s`;
 
-      // Live metrics
       const wpm = calculateWpm(state.comp.correctChars, elapsedSec);
       const acc = calculateAccuracy(state.comp.correctChars, state.comp.totalTyped);
       dom.compWpmDisplay.textContent = wpm;
@@ -742,7 +860,6 @@
     const val = dom.compInput.value;
     const passage = state.comp.passage;
 
-    // Start timer on first keystroke
     if (!state.comp.isActive && val.length > 0) {
       startCompTimer();
     }
@@ -773,7 +890,6 @@
 
     renderPassageText(dom.compTextDisplay, passage, val);
 
-    // Passage finished early before timer expired
     if (val.length >= passage.length) {
       finishCompTest();
     }
@@ -800,29 +916,29 @@
     const finalWpm = calculateWpm(state.comp.correctChars, totalElapsedSec);
     const finalAcc = calculateAccuracy(state.comp.correctChars, state.comp.totalTyped);
 
-    // Lifetime & Mode PB check
     const modeKey = `comp${state.comp.durationSeconds}`;
     const previousModePb = state.stats.bestByMode[modeKey]?.wpm || 0;
     const isNewModePb = finalWpm > previousModePb;
     const isNewGlobalPb = finalWpm > state.stats.personalBestWpm;
 
-    // Update stats
     state.stats.totalTests += 1;
     if (finalWpm > state.stats.personalBestWpm) state.stats.personalBestWpm = finalWpm;
     if (finalAcc > state.stats.bestAccuracy) state.stats.bestAccuracy = finalAcc;
 
-    if (finalWpm > state.stats.bestByMode[modeKey].wpm) {
-      state.stats.bestByMode[modeKey].wpm = finalWpm;
-    }
-    if (finalAcc > state.stats.bestByMode[modeKey].acc) {
-      state.stats.bestByMode[modeKey].acc = finalAcc;
+    if (state.stats.bestByMode[modeKey]) {
+      if (finalWpm > state.stats.bestByMode[modeKey].wpm) {
+        state.stats.bestByMode[modeKey].wpm = finalWpm;
+      }
+      if (finalAcc > state.stats.bestByMode[modeKey].acc) {
+        state.stats.bestByMode[modeKey].acc = finalAcc;
+      }
     }
 
-    // Append history
+    const diffLabel = state.comp.difficulty.charAt(0).toUpperCase() + state.comp.difficulty.slice(1);
     state.stats.history.unshift({
       date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
       mode: 'Competitive',
-      config: `${state.comp.durationSeconds}s Challenge`,
+      config: `${state.comp.durationSeconds}s • ${diffLabel}`,
       wpm: finalWpm,
       acc: finalAcc
     });
@@ -830,7 +946,6 @@
 
     saveStats();
 
-    // Populate modal
     dom.resCompWpm.textContent = finalWpm;
     dom.resCompAccuracy.textContent = `${finalAcc}%`;
     dom.resCompDuration.textContent = `${state.comp.durationSeconds}s`;
@@ -860,8 +975,10 @@
     const wpm = dom.resCompWpm.textContent;
     const acc = dom.resCompAccuracy.textContent;
     const dur = dom.resCompDuration.textContent;
+    const diff = state.comp.difficulty.charAt(0).toUpperCase() + state.comp.difficulty.slice(1);
 
     const shareText = `TypeRush Challenge Result:\n` +
+      `Difficulty: ${diff}\n` +
       `Duration: ${dur}\n` +
       `Speed: ${wpm} WPM\n` +
       `Accuracy: ${acc}\n` +
@@ -872,7 +989,6 @@
         title: 'TypeRush Challenge Result',
         text: shareText
       }).catch(err => {
-        // User cancelled or share failed, fallback to clipboard
         copyTextToClipboard(shareText);
       });
     } else {
@@ -922,7 +1038,6 @@
     dom.statsPbAccuracy.textContent = `${state.stats.bestAccuracy}%`;
     dom.statsUnlockedLevels.textContent = `${state.stats.unlockedLevels.length} / 3`;
 
-    // Mode bests
     dom.statsPracticeBestWpm.textContent = `${state.stats.bestByMode.practice.wpm} WPM`;
     dom.statsPracticeBestAcc.textContent = `${state.stats.bestByMode.practice.acc}%`;
 
@@ -935,7 +1050,6 @@
     dom.statsComp120BestWpm.textContent = `${state.stats.bestByMode.comp120.wpm} WPM`;
     dom.statsComp120BestAcc.textContent = `${state.stats.bestByMode.comp120.acc}%`;
 
-    // History table
     dom.historyTableBody.innerHTML = '';
     if (state.stats.history.length === 0) {
       dom.historyEmptyState.removeAttribute('hidden');
@@ -958,7 +1072,7 @@
 
   // --- EVENT LISTENERS INITIALIZATION ---
   function setupEventListeners() {
-    // Navigation items
+    // Nav items
     dom.navLinks.forEach(link => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
@@ -987,7 +1101,7 @@
       });
     });
 
-    // Practice Time format pills
+    // Practice Time pills
     dom.practiceTimeBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         dom.practiceTimeBtns.forEach(b => b.classList.remove('active'));
@@ -997,7 +1111,7 @@
       });
     });
 
-    // Practice typing input & focus card
+    // Practice typing input
     dom.practiceTypingCard.addEventListener('click', () => {
       dom.practiceInput.focus();
     });
@@ -1025,6 +1139,23 @@
       resetPracticeTest(true);
     });
 
+    // Competitive Difficulty pills
+    [
+      { btn: dom.btnCompLevelBeginner, key: 'beginner' },
+      { btn: dom.btnCompLevelIntermediate, key: 'intermediate' },
+      { btn: dom.btnCompLevelAdvanced, key: 'advanced' }
+    ].forEach(item => {
+      if (item.btn) {
+        item.btn.addEventListener('click', () => {
+          if (state.comp.difficulty !== item.key) {
+            state.comp.difficulty = item.key;
+            updateCompDifficultyUI();
+            resetCompTest(true);
+          }
+        });
+      }
+    });
+
     // Competitive Duration pills
     dom.compTimeBtns.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1048,7 +1179,7 @@
       dom.compTypingCard.classList.remove('focused');
     });
 
-    // Prevent copy/pasting in competitive mode
+    // Prevent paste during competitive tests
     dom.compInput.addEventListener('paste', (e) => {
       e.preventDefault();
       alert("Pasting is disabled during competitive typing challenges.");
@@ -1057,6 +1188,9 @@
     dom.compInput.addEventListener('input', handleCompInput);
 
     dom.btnCompRestart.addEventListener('click', () => resetCompTest(false));
+    if (dom.btnCompNewPassage) {
+      dom.btnCompNewPassage.addEventListener('click', () => resetCompTest(true));
+    }
 
     dom.btnCompModalRetry.addEventListener('click', () => {
       dom.compResultsModal.setAttribute('hidden', '');
@@ -1085,7 +1219,7 @@
       resetAllStats();
     });
 
-    // Keyboard accessibility for modals (Escape key)
+    // Escape key modal handling
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         if (!dom.practiceResultsModal.hasAttribute('hidden')) {
